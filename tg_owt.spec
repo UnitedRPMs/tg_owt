@@ -6,30 +6,30 @@
 
 
 # tg_owt
-%global commit0 91d836dc84a16584c6ac52b36c04c0de504d9c34
+%global commit0 575fb17d2853c43329e45f6693370f5e41668055
 %global shortcommit0 %(c=%{commit0}; echo ${c:0:7})
 %global gver git%{shortcommit0}
 
 # libvpx
-%global commit1 ebefb90b75f07ea5ab06d6b2a5ea5355c843d266
+%global commit1 87315c0124e1c388a035bf5719be63d96e079dc2
 %global shortcommit1 %(c=%{commit1}; echo ${c:0:7})
 
 # libyuv
-%global commit2 c41eabe3d4e1c30f8cb1c5f8660583bf168d426a
+%global commit2 b179f1847a7cc17957eab399610cb9ef163bb715
 %global shortcommit2 %(c=%{commit2}; echo ${c:0:7})
 
 #pipewire
 #https://github.com/PipeWire/pipewire.git
-%global commit3 c43dabcc96e2e072cdf08e5f094bb677d9017c6b
+%global commit3 47a294c5bf52656998a7f43b13068c02001add77
 %global shortcommit3 %(c=%{commit3}; echo ${c:0:7})
 
 Name: tg_owt
 Version: 0
-Release: 7%{?dist}
+Release: 8%{?dist}
 
 License: BSD
 URL: https://github.com/desktop-app/tg_owt
-Summary: WebRTC library - static linked
+Summary: WebRTC library 
 Source0: https://github.com/desktop-app/tg_owt/archive/%{commit0}/tg_owt-%{shortcommit0}.tar.gz
 Source1: https://chromium.googlesource.com/webm/libvpx.git/+archive/%{commit1}.tar.gz#/libvpx-%{shortcommit1}.tar.gz
 Source2: https://chromium.googlesource.com/libyuv/libyuv.git/+archive/%{commit2}.tar.gz#/libyuv-%{shortcommit2}.tar.gz
@@ -96,6 +96,8 @@ BuildRequires: pkgconfig(xtst)
 BuildRequires: pkgconfig(glibmm-2.4)
 BuildRequires: pkgconfig(webkit2gtk-4.0)
 BuildRequires: extra-cmake-modules
+BuildRequires: unzip
+BuildRequires: libXtst-devel libXrandr-devel libXcomposite-devel libva-devel
 
 BuildRequires: yasm
 
@@ -103,15 +105,22 @@ BuildRequires: yasm
 %description
 WebRTC library - static linked
 
+%package static
+Summary: WebRTC library - static linked
+Requires: tg_owt >= %{version}-%{release}
+
+%description static
+WebRTC library - static linked
+
 %package devel
-Summary: Development files for 
+Summary: Development files for tg_owt
 Requires: tg_owt >= %{version}-%{release}
 
 %description devel
 %{summary}.
 
 %prep
-%autosetup -n tg_owt-%{commit0}
+%autosetup -n tg_owt-%{commit0} -p1
 tar -xf %{S:1} -C $PWD/src/third_party/libvpx/source/libvpx
 tar -xf %{S:2} -C $PWD/src/third_party/libyuv
 rm -rf $PWD/src/third_party/pipewire
@@ -123,36 +132,60 @@ tar -xf %{S:3} -C $PWD/src/third_party/ && mv -f $PWD/src/third_party/pipewire-%
   mkdir -p build
   cmake -B build -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/usr \
-    -DCMAKE_AR=%{_bindir}/gcc-ar \
-    -DCMAKE_RANLIB=%{_bindir}/gcc-ranlib \
-    -DCMAKE_NM=%{_bindir}/gcc-nm \
     -DBUILD_SHARED_LIBS=OFF \
-    -DTG_OWT_SPECIAL_TARGET=linux \
-    -DTG_OWT_LIBJPEG_INCLUDE_PATH=/usr/include \
-    -DTG_OWT_OPENSSL_INCLUDE_PATH=/usr/include \
-    -DTG_OWT_OPUS_INCLUDE_PATH=/usr/include/opus \
-    -DTG_OWT_FFMPEG_INCLUDE_PATH=/usr/include/ffmpeg \
-    -DTG_OWT_DLOPEN_PIPEWIRE=OFF  
+    -DCMAKE_INSTALL_PREFIX=/usr 
+    
+  mkdir -p shared
+    cmake -B shared -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr   
+    
+#    -DCMAKE_AR=%{_bindir}/gcc-ar \
+#    -DCMAKE_RANLIB=%{_bindir}/gcc-ranlib \
+#    -DCMAKE_NM=%{_bindir}/gcc-nm \
+#    -DBUILD_SHARED_LIBS=ON \
+#    -DTG_OWT_SPECIAL_TARGET=linux \
+#    -DTG_OWT_LIBJPEG_INCLUDE_PATH=/usr/include \
+#    -DTG_OWT_OPENSSL_INCLUDE_PATH=/usr/include \
+#    -DTG_OWT_OPUS_INCLUDE_PATH=/usr/include/opus \
+#    -DTG_OWT_FFMPEG_INCLUDE_PATH=/usr/include/ffmpeg \
+#   -DTG_OWT_USE_X11=OFF \
+#    -DTG_OWT_DLOPEN_PIPEWIRE=OFF \
+#    -DWEBRTC_USE_X11=OFF \
+    
+    
+ #   -DWEBRTC_USE_PIPEWIRE 
 
 
   %ninja_build -C build -j2
+  
+  %ninja_build -C shared -j2
 
 
 
 %install
     %ninja_install -C build  -j2
-
+    rm -rf %{buildroot}/%{_includedir}/tg_owt/
+    rm -rf %{buildroot}/%{_libdir}/cmake/tg_owt/
+    
+    %ninja_install -C shared  -j2
 
 
 %files
+%{_libdir}/libtg_owt.so.*
+
+%files static
 %{_libdir}/lib%{name}.a
 
 %files devel
+%{_libdir}/libtg_owt.so
 %{_includedir}/tg_owt/
 %{_libdir}/cmake/tg_owt/
    
 %changelog
+
+* Fri Oct 08 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 0-8
+- Updated to current commit
 
 * Fri Jul 09 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 0-7
 - Inital build
