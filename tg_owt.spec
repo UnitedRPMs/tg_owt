@@ -50,6 +50,7 @@ BuildRequires: cmake(Qt5XkbCommonSupport)
 BuildRequires: cmake(dbusmenu-qt5)
 BuildRequires: cmake(range-v3)
 BuildRequires: cmake(tl-expected)
+BuildRequires: cmake(absl)
 
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
@@ -67,6 +68,8 @@ BuildRequires: pkgconfig(libxxhash)
 BuildRequires: pkgconfig(openssl)
 BuildRequires: pkgconfig(opus)
 BuildRequires: pkgconfig(gtk+-3.0)
+BuildRequires: pkgconfig(usrsctp)
+BuildRequires: pkgconfig(vpx)
 
 BuildRequires: cmake
 BuildRequires: desktop-file-utils
@@ -100,7 +103,7 @@ BuildRequires: pkgconfig(webkit2gtk-4.0)
 BuildRequires: extra-cmake-modules
 BuildRequires: unzip
 BuildRequires: libXtst-devel libXrandr-devel libXcomposite-devel libva-devel
-
+BuildRequires: openh264-devel
 BuildRequires: yasm
 
 
@@ -129,23 +132,22 @@ rm -rf $PWD/src/third_party/pipewire
 tar -xf %{S:3} -C $PWD/src/third_party/ && mv -f $PWD/src/third_party/pipewire-%{commit3} $PWD/src/third_party/pipewire
 
 %build
+cp -rf %{_builddir}/tg_owt-%{commit0}/ %{_builddir}/tg_owt-%{commit0}-shared/
 
   # Static
   mkdir -p build
   cmake -B build -G Ninja \
-    -DCMAKE_INSTALL_PREFIX=%{_prefix} \
+    -DCMAKE_INSTALL_PREFIX=/usr  \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
-    -DTG_OWT_PACKAGED_BUILD=ON 
-    
+    -DTG_OWT_PACKAGED_BUILD=ON \
+
   mkdir -p shared
     cmake -B shared -G Ninja \
-    -DCMAKE_INSTALL_PREFIX=%{_prefix}   
     -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_SHARED_LIBS=ON \
-    -DCMAKE_POSITION_INDEPENDENT_CODE=ON 
-    
+    -DCMAKE_INSTALL_PREFIX=/usr  
+     
 #    -DCMAKE_AR=%{_bindir}/gcc-ar \
 #    -DCMAKE_RANLIB=%{_bindir}/gcc-ranlib \
 #    -DCMAKE_NM=%{_bindir}/gcc-nm \
@@ -164,7 +166,6 @@ tar -xf %{S:3} -C $PWD/src/third_party/ && mv -f $PWD/src/third_party/pipewire-%
 
 
   %ninja_build -C build -j2
-  
   %ninja_build -C shared -j2
 
 
@@ -175,7 +176,6 @@ tar -xf %{S:3} -C $PWD/src/third_party/ && mv -f $PWD/src/third_party/pipewire-%
     rm -rf %{buildroot}/%{_libdir}/cmake/tg_owt/
     
     %ninja_install -C shared  -j2
-
 
 %files
 %{_libdir}/libtg_owt.so.*
