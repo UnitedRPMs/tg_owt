@@ -50,7 +50,9 @@ BuildRequires: cmake(Qt5XkbCommonSupport)
 BuildRequires: cmake(dbusmenu-qt5)
 BuildRequires: cmake(range-v3)
 BuildRequires: cmake(tl-expected)
+%if 0%{?fedora} >= 34
 BuildRequires: cmake(absl)
+%endif
 
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
