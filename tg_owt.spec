@@ -6,26 +6,26 @@
 
 
 # tg_owt
-%global commit0 575fb17d2853c43329e45f6693370f5e41668055
+%global commit0 429a6869e4a164e0aad2d8657db341d56f9a6a6f
 %global shortcommit0 %(c=%{commit0}; echo ${c:0:7})
 %global gver git%{shortcommit0}
 
 # libvpx
-%global commit1 87315c0124e1c388a035bf5719be63d96e079dc2
+%global commit1 626ff35955c2c35b806b3e0ecf551a1a8611cdbf
 %global shortcommit1 %(c=%{commit1}; echo ${c:0:7})
 
 # libyuv
-%global commit2 b179f1847a7cc17957eab399610cb9ef163bb715
+%global commit2 78625492cb0ff43faebbb6cb6db2209cd4ccb785
 %global shortcommit2 %(c=%{commit2}; echo ${c:0:7})
 
 #pipewire
 #https://github.com/PipeWire/pipewire.git
-%global commit3 47a294c5bf52656998a7f43b13068c02001add77
+%global commit3 3cac296ee09091ef64a3daa1d62529f7c13af0f2
 %global shortcommit3 %(c=%{commit3}; echo ${c:0:7})
 
 Name: tg_owt
 Version: 0
-Release: 8%{?dist}
+Release: 9%{?dist}
 
 License: BSD
 URL: https://github.com/desktop-app/tg_owt
@@ -34,6 +34,8 @@ Source0: https://github.com/desktop-app/tg_owt/archive/%{commit0}/tg_owt-%{short
 Source1: https://chromium.googlesource.com/webm/libvpx.git/+archive/%{commit1}.tar.gz#/libvpx-%{shortcommit1}.tar.gz
 Source2: https://chromium.googlesource.com/libyuv/libyuv.git/+archive/%{commit2}.tar.gz#/libyuv-%{shortcommit2}.tar.gz
 Source3: https://github.com/PipeWire/pipewire/archive/%{commit3}/pipewire-%{shortcommit3}.tar.gz
+
+Patch: tg_owt-0_pre20211207-fix-dcsctp-references.patch
 
 ExclusiveArch: x86_64
 
@@ -131,14 +133,18 @@ tar -xf %{S:3} -C $PWD/src/third_party/ && mv -f $PWD/src/third_party/pipewire-%
   # Static
   mkdir -p build
   cmake -B build -G Ninja \
+    -DCMAKE_INSTALL_PREFIX=%{_prefix} \
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=OFF \
-    -DCMAKE_INSTALL_PREFIX=/usr 
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DTG_OWT_PACKAGED_BUILD=ON 
     
   mkdir -p shared
     cmake -B shared -G Ninja \
+    -DCMAKE_INSTALL_PREFIX=%{_prefix}   
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/usr   
+    -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON 
     
 #    -DCMAKE_AR=%{_bindir}/gcc-ar \
 #    -DCMAKE_RANLIB=%{_bindir}/gcc-ranlib \
@@ -183,6 +189,9 @@ tar -xf %{S:3} -C $PWD/src/third_party/ && mv -f $PWD/src/third_party/pipewire-%
 %{_libdir}/cmake/tg_owt/
    
 %changelog
+
+* Fri Dec 17 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 0-9
+- Updated to current commit
 
 * Fri Oct 08 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 0-8
 - Updated to current commit
