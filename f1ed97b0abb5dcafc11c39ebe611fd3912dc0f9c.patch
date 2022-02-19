@@ -1,0 +1,22 @@
+From f1ed97b0abb5dcafc11c39ebe611fd3912dc0f9c Mon Sep 17 00:00:00 2001
+From: Vitaly Zaitsev <vitaly@easycoding.org>
+Date: Sat, 5 Feb 2022 13:48:14 +0100
+Subject: [PATCH] Fixed build on GCC 12 by adding missing includes.
+
+Signed-off-by: Vitaly Zaitsev <vitaly@easycoding.org>
+---
+ src/modules/rtp_rtcp/source/rtp_packetizer_av1_test_helper.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/modules/rtp_rtcp/source/rtp_packetizer_av1_test_helper.h b/src/modules/rtp_rtcp/source/rtp_packetizer_av1_test_helper.h
+index 04a902fe..6a2d6454 100644
+--- a/src/modules/rtp_rtcp/source/rtp_packetizer_av1_test_helper.h
++++ b/src/modules/rtp_rtcp/source/rtp_packetizer_av1_test_helper.h
+@@ -11,6 +11,7 @@
+ #ifndef MODULES_RTP_RTCP_SOURCE_RTP_PACKETIZER_AV1_TEST_HELPER_H_
+ #define MODULES_RTP_RTCP_SOURCE_RTP_PACKETIZER_AV1_TEST_HELPER_H_
+ 
++#include <stddef.h>
+ #include <stdint.h>
+ 
+ #include <initializer_list>

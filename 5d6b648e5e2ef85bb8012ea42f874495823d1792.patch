@@ -1,0 +1,30 @@
+From 5d6b648e5e2ef85bb8012ea42f874495823d1792 Mon Sep 17 00:00:00 2001
+From: Nicholas Guriev <nicholas@guriev.su>
+Date: Sat, 11 Dec 2021 18:26:13 +0300
+Subject: [PATCH] Fix include of libabsl.cmake
+
+ * Do not require persistence of bundled abseil if a system library is found.
+---
+ CMakeLists.txt | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index f72b1916..7e624ec5 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -63,7 +63,6 @@ include(cmake/init_target.cmake)
+ include(cmake/generate_target.cmake)
+ include(cmake/target_yasm_sources.cmake)
+ include(cmake/external.cmake)
+-include(cmake/libabsl.cmake)
+ include(cmake/libopenh264.cmake)
+ include(cmake/libpffft.cmake)
+ include(cmake/librnnoise.cmake)
+@@ -2405,6 +2404,7 @@ if (TG_OWT_USE_PROTOBUF)
+ endif()
+ 
+ if (NOT absl_FOUND)
++    include(cmake/libabsl.cmake)
+     list(APPEND export_targets libabsl)
+ endif()
+ if (NOT LIBOPENH264_FOUND)

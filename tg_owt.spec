@@ -6,7 +6,7 @@
 
 
 # tg_owt
-%global commit0 429a6869e4a164e0aad2d8657db341d56f9a6a6f
+%global commit0 4cba1acdd718b700bb33945c0258283689d4eac7
 %global shortcommit0 %(c=%{commit0}; echo ${c:0:7})
 %global gver git%{shortcommit0}
 
@@ -15,12 +15,12 @@
 %global shortcommit1 %(c=%{commit1}; echo ${c:0:7})
 
 # libyuv
-%global commit2 78625492cb0ff43faebbb6cb6db2209cd4ccb785
+%global commit2 ad890067f661dc747a975bc55ba3767fe30d4452
 %global shortcommit2 %(c=%{commit2}; echo ${c:0:7})
 
 #pipewire
 #https://github.com/PipeWire/pipewire.git
-%global commit3 3cac296ee09091ef64a3daa1d62529f7c13af0f2
+%global commit3 bdd407fe66cc9e46d4bc4dcc989d50679000482b
 %global shortcommit3 %(c=%{commit3}; echo ${c:0:7})
 
 Name: tg_owt
@@ -35,7 +35,8 @@ Source1: https://chromium.googlesource.com/webm/libvpx.git/+archive/%{commit1}.t
 Source2: https://chromium.googlesource.com/libyuv/libyuv.git/+archive/%{commit2}.tar.gz#/libyuv-%{shortcommit2}.tar.gz
 Source3: https://github.com/PipeWire/pipewire/archive/%{commit3}/pipewire-%{shortcommit3}.tar.gz
 
-Patch: tg_owt-0_pre20211207-fix-dcsctp-references.patch
+Patch:	https://github.com/desktop-app/tg_owt/commit/5d6b648e5e2ef85bb8012ea42f874495823d1792.patch
+Patch1:	https://github.com/desktop-app/tg_owt/commit/f1ed97b0abb5dcafc11c39ebe611fd3912dc0f9c.patch
 
 ExclusiveArch: x86_64
 
@@ -50,9 +51,9 @@ BuildRequires: cmake(Qt5XkbCommonSupport)
 BuildRequires: cmake(dbusmenu-qt5)
 BuildRequires: cmake(range-v3)
 BuildRequires: cmake(tl-expected)
-%if 0%{?fedora} >= 34
-BuildRequires: cmake(absl)
-%endif
+#if 0%{?fedora} >= 34
+#BuildRequires: cmake(absl)
+#endif
 
 BuildRequires: pkgconfig(gio-2.0)
 BuildRequires: pkgconfig(glib-2.0)
@@ -95,7 +96,7 @@ BuildRequires: pipewire-devel
 BuildRequires: rlottie-devel
 BuildRequires: rnnoise-devel
 BuildRequires: pkgconfig(alsa)
-BuildRequires: ffmpeg-devel
+BuildRequires: ffmpeg4-devel
 BuildRequires: pkgconfig(libpulse)
 BuildRequires: pkgconfig(protobuf)
 BuildRequires: pkgconfig(x11)
@@ -107,7 +108,9 @@ BuildRequires: unzip
 BuildRequires: libXtst-devel libXrandr-devel libXcomposite-devel libva-devel
 BuildRequires: openh264-devel
 BuildRequires: yasm
-
+BuildRequires: pkgconfig(gbm)
+BuildRequires: pkgconfig(libdrm)
+#BuildRequires: abseil-cpp-devel
 
 %description
 WebRTC library - static linked
@@ -128,13 +131,19 @@ Requires: tg_owt >= %{version}-%{release}
 
 %prep
 %autosetup -n tg_owt-%{commit0} -p1
-tar -xf %{S:1} -C $PWD/src/third_party/libvpx/source/libvpx
+rm -rf $PWD/src/third_party/libvpx/source/libvpx && mkdir -p $PWD/src/third_party/libvpx/source/libvpx && tar -xf %{S:1} -C $PWD/src/third_party/libvpx/source/libvpx
 tar -xf %{S:2} -C $PWD/src/third_party/libyuv
 rm -rf $PWD/src/third_party/pipewire
 tar -xf %{S:3} -C $PWD/src/third_party/ && mv -f $PWD/src/third_party/pipewire-%{commit3} $PWD/src/third_party/pipewire
 
+sed -i '/include(cmake\/libvpx.cmake)/d' CMakeLists.txt
+sed -i '/include(cmake\/libopenh264.cmake)/d' CMakeLists.txt
+
 %build
 cp -rf %{_builddir}/tg_owt-%{commit0}/ %{_builddir}/tg_owt-%{commit0}-shared/
+DRM_CFLAGS="$(pkg-config --cflags libdrm)"
+
+export CFLAGS="%{optflags} -fPIC $DRM_CFLAGS" CXXFLAGS="%{optflags} -fPIC $DRM_CFLAGS"
 
   # Static
   mkdir -p build
@@ -143,12 +152,19 @@ cp -rf %{_builddir}/tg_owt-%{commit0}/ %{_builddir}/tg_owt-%{commit0}-shared/
     -DCMAKE_BUILD_TYPE=Release \
     -DBUILD_SHARED_LIBS=OFF \
     -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DCMAKE_BUILD_TYPE:STRING=None \
     -DTG_OWT_PACKAGED_BUILD=ON \
 
+pushd %{_builddir}/tg_owt-%{commit0}-shared
   mkdir -p shared
     cmake -B shared -G Ninja \
     -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=/usr  
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+    -DCMAKE_BUILD_TYPE:STRING=None \
+    -DBUILD_SHARED_LIBS=ON 
+    
+    popd
      
 #    -DCMAKE_AR=%{_bindir}/gcc-ar \
 #    -DCMAKE_RANLIB=%{_bindir}/gcc-ranlib \
@@ -168,16 +184,21 @@ cp -rf %{_builddir}/tg_owt-%{commit0}/ %{_builddir}/tg_owt-%{commit0}-shared/
 
 
   %ninja_build -C build -j2
+  
+pushd %{_builddir}/tg_owt-%{commit0}-shared
   %ninja_build -C shared -j2
-
+popd
 
 
 %install
-    %ninja_install -C build  -j2
-    rm -rf %{buildroot}/%{_includedir}/tg_owt/
-    rm -rf %{buildroot}/%{_libdir}/cmake/tg_owt/
-    
+pushd %{_builddir}/tg_owt-%{commit0}-shared    
     %ninja_install -C shared  -j2
+    rm -rf %{buildroot}/%{_includedir}/tg_owt/
+    rm -rf %{buildroot}/%{_libdir}/cmake/tg_owt/    
+    popd
+    
+    %ninja_install -C build  -j2
+
 
 %files
 %{_libdir}/libtg_owt.so.*
@@ -191,6 +212,9 @@ cp -rf %{_builddir}/tg_owt-%{commit0}/ %{_builddir}/tg_owt-%{commit0}-shared/
 %{_libdir}/cmake/tg_owt/
    
 %changelog
+
+* Fri Feb 11 2022 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 0-10
+- Updated to current commit
 
 * Fri Dec 17 2021 Unitedrpms Project <unitedrpms AT protonmail DOT com> - 0-9
 - Updated to current commit
